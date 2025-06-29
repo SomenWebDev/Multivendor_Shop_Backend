@@ -36,7 +36,7 @@ This is the backend of a full-stack multivendor e-commerce platform built using 
 | Tech              | Purpose                                  |
 |-------------------|-------------------------------------------|
 | **Express.js**    | Server framework                          |
-| **MongoDB + Mongoose** | Database + ODM                          |
+| **MongoDB + Mongoose** | Database                             |
 | **jsonwebtoken**  | JWT-based session management              |
 | **bcryptjs**      | Password hashing                          |
 | **multer**        | File upload handling                      |
@@ -47,21 +47,7 @@ This is the backend of a full-stack multivendor e-commerce platform built using 
 
 ---
 
-## 📁 Folder Structure
 
-
----
-Multivendor_Shop_Backend/
-│
-├── controllers/ # All business logic
-├── models/ # Mongoose schemas
-├── middlewares/ # Auth, error handlers
-├── routes/ # REST API endpoints
-├── utils/ # Cloudinary config, email helper, validators
-├── config/ # Stripe & Cloudinary setup
-├── .env #  environment variables
-├── server.js # App entry point
-└── README.md # You're here!
 ## ⚙️ Environment Variables
 
 Create a `.env` file in the root with:
@@ -86,36 +72,57 @@ CLIENT_URL=http://localhost:5173
 ## 🔌 API Endpoints Overview
 
 ### 🔑 Auth
-- `POST /api/auth/register`
-- `POST /api/auth/login`
+- `POST /api/auth/register` – Register as customer or vendor (with email verification)
+- `POST /api/auth/login` – Login and receive JWT
 
-### 👨‍🍳 Vendor
-- `POST /api/vendor/products`
-- `GET /api/vendor/products`
-- `GET /api/vendor/orders`
-- `GET /api/vendor/earnings`
+---
 
-### 🛍 Products
-- `GET /api/products/public`
-- `GET /api/products/:id`
-- `GET /api/products/search`
+### 👤 Customer Routes
+- `GET /api/customer/orders` – Get logged-in customer's orders
+- `POST /api/customer/reviews` – Create a review (protected)
+- `PUT /api/customer/reviews/:id` – Edit a review (protected)
+- `DELETE /api/customer/reviews/:id` – Delete a review (protected)
 
-### 📦 Orders
-- `POST /api/orders/checkout-session` (Stripe)
-- `POST /api/orders` (after payment)
-- `GET /api/orders/customer`
-- `GET /api/orders/:id`
+---
 
-### ⭐ Reviews
-- `POST /api/reviews`
-- `PUT /api/reviews/:id`
-- `DELETE /api/reviews/:id`
-- `GET /api/reviews/public`
+### 🛍 Public Product & Category
+- `GET /api/products/public` – List all public products
+- `GET /api/products/public/:id` – Get a product by ID
+- `GET /api/categories` – Fetch all product categories
 
-### 🧑‍💼 Admin
-- `GET /api/admin/vendors`
-- `GET /api/admin/products`
-- `GET /api/admin/orders`
+---
+
+### ⭐ Public Reviews
+- `GET /api/reviews/public?limit=4` – Get latest public reviews
+- `GET /api/reviews/public` – Paginated all reviews (e.g. for /reviews page)
+
+---
+
+### 🧾 Checkout & Payment (Stripe)
+- `POST /api/payment/create-checkout-session` – Create Stripe checkout session
+- `POST /webhook` – Stripe webhook listener (⚠️ requires raw body)
+- `POST /api/orders` – Create an order in DB after successful payment
+
+---
+
+### 👨‍🍳 Vendor Dashboard
+- `POST /api/vendor/products` – Create product (image uploads via Cloudinary)
+- `GET /api/vendor/products` – Get vendor’s own products
+- `PUT /api/vendor/products/:id` – Update product
+- `DELETE /api/vendor/products/:id` – Delete product
+
+- `GET /api/vendor/orders` – Get orders relevant to the vendor
+- `GET /api/vendor/earnings` – Get total earnings
+- `GET /api/vendor/dashboard` – Summary of vendor activity
+
+---
+
+### 🧑‍💼 Admin Panel
+- `GET /api/admin/vendors` – View or moderate vendor accounts
+- `GET /api/admin/products` – View or moderate products
+- `GET /api/admin/orders` – View all orders
+- `GET /api/admin/users` – View all users
+- `GET /api/admin/dashboard` – Admin stats & analytics
 
 ---
 ## 📬 Nodemailer Integration
