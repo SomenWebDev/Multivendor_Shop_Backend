@@ -16,7 +16,6 @@ This is the backend of a full-stack multivendor e-commerce platform built using 
 - Upload product images via **Cloudinary**
 - View vendor-specific orders
 - Earnings tracking
-- Stripe Connect onboarding for vendor payouts
 
 ### 🛒 Customer Experience
 - Browse products with category & search filters
@@ -43,7 +42,7 @@ This is the backend of a full-stack multivendor e-commerce platform built using 
 | **multer**        | File upload handling                      |
 | **cloudinary**    | Hosting uploaded product images           |
 | **nodemailer**    | Sending transactional emails              |
-| **stripe**        | Payment gateway and vendor payouts        |
+| **stripe**        | Payment gateway        |
 | **cookie-parser**, **cors**, **dotenv** | Server utilities       |
 
 ---
@@ -60,7 +59,7 @@ Multivendor_Shop_Backend/
 ├── routes/ # REST API endpoints
 ├── utils/ # Cloudinary config, email helper, validators
 ├── config/ # Stripe & Cloudinary setup
-├── .env # Your environment variables
+├── .env #  environment variables
 ├── server.js # App entry point
 └── README.md # You're here!
 ## ⚙️ Environment Variables
@@ -89,7 +88,6 @@ CLIENT_URL=http://localhost:5173
 ### 🔑 Auth
 - `POST /api/auth/register`
 - `POST /api/auth/login`
-- `GET /api/auth/profile`
 
 ### 👨‍🍳 Vendor
 - `POST /api/vendor/products`
@@ -120,15 +118,15 @@ CLIENT_URL=http://localhost:5173
 - `GET /api/admin/orders`
 
 ---
-
 ## 📬 Nodemailer Integration
 
-We use `nodemailer` to send:
-- Order confirmations
-- Vendor approval emails
-- Other transactional notifications
+We use `nodemailer` to send verification emails during user registration.
 
-Uses your email (SMTP) configured in `.env`.
+### 📌 Use Cases
+
+- ✅ Sends a verification email with a secure activation link after user signup.
+- 📥 Ensures only valid email addresses can register.
+
 
 ---
 
@@ -142,7 +140,6 @@ Uses your email (SMTP) configured in `.env`.
 ## 💳 Stripe Payment Integration
 
 - Checkout powered by **Stripe Checkout**
-- Vendor earnings are split via **Stripe Connect**
 - Webhooks listen for payment success
 
 To test webhooks locally:
