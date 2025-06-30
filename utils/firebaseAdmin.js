@@ -1,11 +1,10 @@
-//utils//firebaseAdmin.js
 const admin = require("firebase-admin");
 
 if (!admin.apps.length) {
+  const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_JSON);
+
   admin.initializeApp({
-    credential: admin.credential.cert(
-      require("../config/multivendor-6fc02-firebase-adminsdk-fbsvc-7d0ff03d86.json")
-    ),
+    credential: admin.credential.cert(serviceAccount),
   });
 }
 
