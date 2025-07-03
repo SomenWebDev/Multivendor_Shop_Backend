@@ -19,7 +19,6 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// ✅ Prevent same vendor from creating products with same name
 productSchema.index({ name: 1, vendor: 1 }, { unique: true });
 
 module.exports = mongoose.model("Product", productSchema);

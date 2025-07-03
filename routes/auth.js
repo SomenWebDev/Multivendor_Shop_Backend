@@ -16,8 +16,7 @@ router.post("/register", register);
 router.post("/login", login);
 router.post("/verify-email", verifyEmail);
 
-// Google Login using token strategy
-// change to match new strategy
+
 router.post("/google", googleLogin);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);

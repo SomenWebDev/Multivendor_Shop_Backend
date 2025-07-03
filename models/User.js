@@ -11,6 +11,10 @@ const userSchema = new mongoose.Schema(
       enum: ["customer", "vendor", "admin"],
       default: "customer",
     },
+    profileImage: {
+      type: String,
+      default: "",
+    },
     isVendorApproved: { type: Boolean, default: false },
     isEmailVerified: { type: Boolean, default: false },
     emailVerificationCode: { type: String },

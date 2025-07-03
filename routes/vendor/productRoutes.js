@@ -12,17 +12,17 @@ const {
   deleteProduct,
 } = require("../../controllers/vendor/productController");
 
-// ✅ Apply auth & role middleware to all product routes
+// Apply auth & role middleware to all product routes
 router.use(verifyToken, permitRoles("vendor"));
 
-// ✅ Create product with image upload
+//  Create product with image upload
 router.post("/", upload.single("image"), createProduct);
 
-// ✅ Read products
+//  Read products
 router.get("/", getVendorProducts);
 router.get("/:id", getProduct);
 
-// ✅ Update and Delete
+// Update and Delete
 router.put("/:id", upload.single("image"), updateProduct);
 router.delete("/:id", deleteProduct);
 

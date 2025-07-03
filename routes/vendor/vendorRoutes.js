@@ -5,7 +5,6 @@ const permitRoles = require("../../middleware/roleMiddleware");
 
 const router = express.Router();
 
-// ✅ Vendor dashboard route only
 router.get("/dashboard", verifyToken, permitRoles("vendor"), (req, res) => {
   res.json({ message: "Vendor Dashboard Access Granted" });
 });
