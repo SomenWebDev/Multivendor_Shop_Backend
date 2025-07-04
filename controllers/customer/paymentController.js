@@ -1,11 +1,10 @@
-// controllers/customer/paymentController.js
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 exports.createCheckoutSession = async (req, res) => {
   const { customerId, cartItems, shippingInfo } = req.body;
 
   try {
-    // Flatten the cartItems with vendorId
+    // Flatten the cartItems with vendorId for metadata
     const flatCartItems = cartItems.map((item) => ({
       productId: item.productId,
       quantity: item.quantity,
@@ -18,6 +17,7 @@ exports.createCheckoutSession = async (req, res) => {
       mode: "payment",
       success_url: `${process.env.CLIENT_URL}/payment/success`,
       cancel_url: `${process.env.CLIENT_URL}/payment/cancel`,
+
       line_items: cartItems.map((item) => ({
         price_data: {
           currency: "usd",
@@ -26,18 +26,19 @@ exports.createCheckoutSession = async (req, res) => {
         },
         quantity: item.quantity,
       })),
+
       metadata: {
-        customerId,
-        shippingName: shippingInfo.name,
-        shippingPhone: shippingInfo.phone,
-        shippingAddress: shippingInfo.address,
-        cartItems: JSON.stringify(flatCartItems), 
+        customerId: String(customerId),
+        shippingName: String(shippingInfo.name || ""),
+        shippingPhone: String(shippingInfo.phone || ""),
+        shippingAddress: String(shippingInfo.address || ""),
+        cartItems: JSON.stringify(flatCartItems),
       },
     });
 
     res.json({ url: session.url });
   } catch (error) {
-    console.error("Stripe session creation failed:", error);
+    console.error("❌ Stripe session creation failed:", error);
     res.status(500).json({ error: "Checkout session failed" });
   }
 };
