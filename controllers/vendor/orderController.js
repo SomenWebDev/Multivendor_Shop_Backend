@@ -1,4 +1,3 @@
-// controllers/vendor/orderController.js
 const Order = require("../../models/Order");
 
 exports.getVendorOrders = async (req, res) => {
@@ -65,11 +64,8 @@ exports.getVendorOrders = async (req, res) => {
           name: order.customer?.name,
           email: order.customer?.email,
         },
-        shippingInfo: {
-          name: order.shippingInfo?.name || "",
-          phone: order.shippingInfo?.phone || "",
-          address: order.shippingInfo?.address || "",
-        },
+        phone: order.phone || "",
+        address: order.address || "",
         products: vendorProducts,
         totalAmount: vendorTotal,
         createdAt: order.createdAt,
@@ -117,6 +113,7 @@ exports.updateVendorProductStatus = async (req, res) => {
 
     res.json({ message: "Product status updated" });
   } catch (err) {
+    console.error("Update Status Error:", err);
     res.status(500).json({ message: "Failed to update status" });
   }
 };

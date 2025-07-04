@@ -25,11 +25,8 @@ const orderSchema = new mongoose.Schema(
         },
       },
     ],
-    shippingInfo: {
-      name: { type: String },
-      phone: { type: String },
-      address: { type: String },
-    },
+    phone: String,
+    address: String,
     totalAmount: Number,
     paymentIntentId: String,
   },

@@ -29,7 +29,6 @@ exports.createCheckoutSession = async (req, res) => {
 
       metadata: {
         customerId: String(customerId),
-        shippingName: String(shippingInfo.name || ""),
         shippingPhone: String(shippingInfo.phone || ""),
         shippingAddress: String(shippingInfo.address || ""),
         cartItems: JSON.stringify(flatCartItems),
