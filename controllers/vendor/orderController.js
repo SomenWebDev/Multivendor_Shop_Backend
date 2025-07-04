@@ -25,32 +25,21 @@ exports.getVendorOrders = async (req, res) => {
       return nameMatch || emailMatch;
     });
 
-    // Sorting logic
-    let sortedOrders = filteredOrders;
+    let sortedOrders = [...filteredOrders];
 
     if (sortBy === "newest") {
-      sortedOrders = filteredOrders.sort((a, b) => b.createdAt - a.createdAt);
+      sortedOrders.sort((a, b) => b.createdAt - a.createdAt);
     } else if (sortBy === "oldest") {
-      sortedOrders = filteredOrders.sort((a, b) => a.createdAt - b.createdAt);
-    } else if (sortBy === "totalHigh") {
-      sortedOrders = filteredOrders.sort((a, b) => {
+      sortedOrders.sort((a, b) => a.createdAt - b.createdAt);
+    } else if (sortBy === "totalHigh" || sortBy === "totalLow") {
+      sortedOrders.sort((a, b) => {
         const totalA = a.products
           .filter((p) => p.vendor.toString() === vendorId)
           .reduce((acc, item) => acc + item.price * item.quantity, 0);
         const totalB = b.products
           .filter((p) => p.vendor.toString() === vendorId)
           .reduce((acc, item) => acc + item.price * item.quantity, 0);
-        return totalB - totalA;
-      });
-    } else if (sortBy === "totalLow") {
-      sortedOrders = filteredOrders.sort((a, b) => {
-        const totalA = a.products
-          .filter((p) => p.vendor.toString() === vendorId)
-          .reduce((acc, item) => acc + item.price * item.quantity, 0);
-        const totalB = b.products
-          .filter((p) => p.vendor.toString() === vendorId)
-          .reduce((acc, item) => acc + item.price * item.quantity, 0);
-        return totalA - totalB;
+        return sortBy === "totalHigh" ? totalB - totalA : totalA - totalB;
       });
     }
 
@@ -72,7 +61,15 @@ exports.getVendorOrders = async (req, res) => {
       );
       return {
         _id: order._id,
-        customer: order.customer,
+        customer: {
+          name: order.customer?.name,
+          email: order.customer?.email,
+        },
+        shippingInfo: {
+          name: order.shippingInfo?.name || "",
+          phone: order.shippingInfo?.phone || "",
+          address: order.shippingInfo?.address || "",
+        },
         products: vendorProducts,
         totalAmount: vendorTotal,
         createdAt: order.createdAt,
