@@ -1,10 +1,11 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 exports.createCheckoutSession = async (req, res) => {
-
+  // Destructure phone and address directly, not from shippingInfo
   const { customerId, cartItems, phone, address } = req.body;
 
   try {
+    // Flatten the cartItems with vendorId for metadata
     const flatCartItems = cartItems.map((item) => ({
       productId: item.productId,
       quantity: item.quantity,
