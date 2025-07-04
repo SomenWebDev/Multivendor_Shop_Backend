@@ -1,10 +1,10 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 exports.createCheckoutSession = async (req, res) => {
-  const { customerId, cartItems, shippingInfo } = req.body;
+
+  const { customerId, cartItems, phone, address } = req.body;
 
   try {
-    // Flatten the cartItems with vendorId for metadata
     const flatCartItems = cartItems.map((item) => ({
       productId: item.productId,
       quantity: item.quantity,
@@ -29,8 +29,8 @@ exports.createCheckoutSession = async (req, res) => {
 
       metadata: {
         customerId: String(customerId),
-        shippingPhone: String(shippingInfo.phone || ""),
-        shippingAddress: String(shippingInfo.address || ""),
+        shippingPhone: String(phone || ""),
+        shippingAddress: String(address || ""),
         cartItems: JSON.stringify(flatCartItems),
       },
     });
