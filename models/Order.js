@@ -25,8 +25,6 @@ const orderSchema = new mongoose.Schema(
         },
       },
     ],
-    phone: String,
-    address: String,
     totalAmount: Number,
     paymentIntentId: String,
   },

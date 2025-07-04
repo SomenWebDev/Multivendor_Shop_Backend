@@ -1,3 +1,4 @@
+// controllers/vendor/orderController.js
 const Order = require("../../models/Order");
 
 exports.getVendorOrders = async (req, res) => {
@@ -24,21 +25,32 @@ exports.getVendorOrders = async (req, res) => {
       return nameMatch || emailMatch;
     });
 
-    let sortedOrders = [...filteredOrders];
+    // Sorting logic
+    let sortedOrders = filteredOrders;
 
     if (sortBy === "newest") {
-      sortedOrders.sort((a, b) => b.createdAt - a.createdAt);
+      sortedOrders = filteredOrders.sort((a, b) => b.createdAt - a.createdAt);
     } else if (sortBy === "oldest") {
-      sortedOrders.sort((a, b) => a.createdAt - b.createdAt);
-    } else if (sortBy === "totalHigh" || sortBy === "totalLow") {
-      sortedOrders.sort((a, b) => {
+      sortedOrders = filteredOrders.sort((a, b) => a.createdAt - b.createdAt);
+    } else if (sortBy === "totalHigh") {
+      sortedOrders = filteredOrders.sort((a, b) => {
         const totalA = a.products
           .filter((p) => p.vendor.toString() === vendorId)
           .reduce((acc, item) => acc + item.price * item.quantity, 0);
         const totalB = b.products
           .filter((p) => p.vendor.toString() === vendorId)
           .reduce((acc, item) => acc + item.price * item.quantity, 0);
-        return sortBy === "totalHigh" ? totalB - totalA : totalA - totalB;
+        return totalB - totalA;
+      });
+    } else if (sortBy === "totalLow") {
+      sortedOrders = filteredOrders.sort((a, b) => {
+        const totalA = a.products
+          .filter((p) => p.vendor.toString() === vendorId)
+          .reduce((acc, item) => acc + item.price * item.quantity, 0);
+        const totalB = b.products
+          .filter((p) => p.vendor.toString() === vendorId)
+          .reduce((acc, item) => acc + item.price * item.quantity, 0);
+        return totalA - totalB;
       });
     }
 
@@ -60,12 +72,7 @@ exports.getVendorOrders = async (req, res) => {
       );
       return {
         _id: order._id,
-        customer: {
-          name: order.customer?.name,
-          email: order.customer?.email,
-        },
-        phone: order.phone || "",
-        address: order.address || "",
+        customer: order.customer,
         products: vendorProducts,
         totalAmount: vendorTotal,
         createdAt: order.createdAt,
@@ -113,7 +120,6 @@ exports.updateVendorProductStatus = async (req, res) => {
 
     res.json({ message: "Product status updated" });
   } catch (err) {
-    console.error("Update Status Error:", err);
     res.status(500).json({ message: "Failed to update status" });
   }
 };
