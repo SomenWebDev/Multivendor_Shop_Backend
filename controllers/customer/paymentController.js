@@ -1,16 +1,10 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const TempOrder = require("../../models/TempOrder");
 
 exports.createCheckoutSession = async (req, res) => {
   const { customerId, cartItems, shippingInfo } = req.body;
 
   try {
-    const flatCartItems = cartItems.map((item) => ({
-      productId: item.productId,
-      quantity: item.quantity,
-      price: item.price,
-      vendorId: item.vendorId,
-    }));
-
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -24,12 +18,15 @@ exports.createCheckoutSession = async (req, res) => {
         },
         quantity: item.quantity,
       })),
-      metadata: {
-        customerId,
-        phone: shippingInfo.phone,
-        address: shippingInfo.address,
-        cartItems: JSON.stringify(flatCartItems),
-      },
+    });
+
+    // Save temporary order details using Stripe session ID
+    await TempOrder.create({
+      sessionId: session.id,
+      customer: customerId,
+      cartItems,
+      phone: shippingInfo.phone,
+      address: shippingInfo.address,
     });
 
     res.json({ url: session.url });

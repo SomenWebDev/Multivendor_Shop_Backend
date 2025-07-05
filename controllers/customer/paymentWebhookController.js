@@ -1,6 +1,7 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const Order = require("../../models/Order");
 const Product = require("../../models/Product");
+const TempOrder = require("../../models/TempOrder");
 
 exports.handleStripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
@@ -19,54 +20,45 @@ exports.handleStripeWebhook = async (req, res) => {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
-    const metadata = session.metadata;
 
     try {
-      const parsedItems = JSON.parse(metadata.cartItems || "[]");
+      const tempOrder = await TempOrder.findOne({ sessionId: session.id });
 
-      const products = parsedItems.map((item) => {
-        if (!item.vendorId) {
-          throw new Error("Missing vendorId in cart item");
-        }
+      if (!tempOrder) {
+        throw new Error("No matching temp order found for this session");
+      }
 
-        return {
-          product: item.productId,
-          quantity: item.quantity,
-          price: item.price,
-          vendor: item.vendorId,
-        };
-      });
+      const products = tempOrder.cartItems.map((item) => ({
+        product: item.productId,
+        quantity: item.quantity,
+        price: item.price,
+        vendor: item.vendorId,
+      }));
 
       const order = await Order.create({
-        customer: metadata.customerId,
+        customer: tempOrder.customer,
         products,
         totalAmount: session.amount_total / 100,
         paymentIntentId: session.payment_intent,
-        phone: metadata.phone,
-        address: metadata.address,
+        phone: tempOrder.phone,
+        address: tempOrder.address,
       });
 
-      console.log("✅ Order saved:", order._id, "on", order.createdAt);
+      console.log("✅ Final order created:", order._id);
 
-      for (const item of parsedItems) {
-        const product = await Product.findById(item.productId);
+      for (const item of products) {
+        const product = await Product.findById(item.product);
         if (product) {
           product.stock = Math.max(0, product.stock - item.quantity);
           await product.save();
-        } else {
-          console.warn(
-            `⚠️ Product not found for stock update: ${item.productId}`
-          );
         }
       }
+
+      // Clean up temp data
+      await TempOrder.deleteOne({ _id: tempOrder._id });
     } catch (error) {
-      console.warn(
-        "❌ Failed to parse cartItems, save order, or update stock:",
-        error
-      );
-      return res
-        .status(400)
-        .json({ error: "Order creation or stock update failed" });
+      console.error("❌ Failed to process Stripe webhook:", error);
+      return res.status(400).json({ error: "Order creation failed" });
     }
   }
 
