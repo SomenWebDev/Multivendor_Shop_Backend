@@ -4,6 +4,11 @@ const TempOrder = require("../../models/TempOrder");
 exports.createCheckoutSession = async (req, res) => {
   const { customerId, cartItems, shippingInfo } = req.body;
 
+  console.log("Received createCheckoutSession request:");
+  console.log("customerId:", customerId);
+  console.log("cartItems:", cartItems);
+  console.log("shippingInfo:", shippingInfo);
+
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -20,14 +25,19 @@ exports.createCheckoutSession = async (req, res) => {
       })),
     });
 
-    // Save temporary order details using Stripe session ID
-    await TempOrder.create({
+    const tempOrderData = {
       sessionId: session.id,
       customer: customerId,
       cartItems,
       phone: shippingInfo.phone,
       address: shippingInfo.address,
-    });
+    };
+
+    console.log("Saving TempOrder:", tempOrderData);
+
+    const newTempOrder = await TempOrder.create(tempOrderData);
+
+    console.log("TempOrder saved:", newTempOrder);
 
     res.json({ url: session.url });
   } catch (error) {

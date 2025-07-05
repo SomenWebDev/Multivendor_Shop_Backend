@@ -21,8 +21,13 @@ exports.handleStripeWebhook = async (req, res) => {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
 
+    console.log("Received checkout.session.completed webhook:");
+    console.log("Session:", session);
+
     try {
       const tempOrder = await TempOrder.findOne({ sessionId: session.id });
+
+      console.log("Fetched TempOrder:", tempOrder);
 
       if (!tempOrder) {
         throw new Error("No matching temp order found for this session");
@@ -35,16 +40,20 @@ exports.handleStripeWebhook = async (req, res) => {
         vendor: item.vendorId,
       }));
 
-      const order = await Order.create({
+      const orderData = {
         customer: tempOrder.customer,
         products,
         totalAmount: session.amount_total / 100,
         paymentIntentId: session.payment_intent,
         phone: tempOrder.phone,
         address: tempOrder.address,
-      });
+      };
 
-      console.log("✅ Final order created:", order._id);
+      console.log("Creating Order with data:", orderData);
+
+      const order = await Order.create(orderData);
+
+      console.log("✅ Final order created:", order);
 
       for (const item of products) {
         const product = await Product.findById(item.product);
@@ -56,6 +65,7 @@ exports.handleStripeWebhook = async (req, res) => {
 
       // Clean up temp data
       await TempOrder.deleteOne({ _id: tempOrder._id });
+      console.log("TempOrder deleted after successful order creation");
     } catch (error) {
       console.error("❌ Failed to process Stripe webhook:", error);
       return res.status(400).json({ error: "Order creation failed" });
