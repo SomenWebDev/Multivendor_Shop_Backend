@@ -1,11 +1,9 @@
-// controllers/customer/paymentController.js
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 exports.createCheckoutSession = async (req, res) => {
   const { customerId, cartItems, shippingInfo } = req.body;
 
   try {
-    // Flatten the cartItems with vendorId
     const flatCartItems = cartItems.map((item) => ({
       productId: item.productId,
       quantity: item.quantity,
@@ -28,10 +26,9 @@ exports.createCheckoutSession = async (req, res) => {
       })),
       metadata: {
         customerId,
-        shippingName: shippingInfo.name,
-        shippingPhone: shippingInfo.phone,
-        shippingAddress: shippingInfo.address,
-        cartItems: JSON.stringify(flatCartItems), 
+        phone: shippingInfo.phone,
+        address: shippingInfo.address,
+        cartItems: JSON.stringify(flatCartItems),
       },
     });
 

@@ -42,11 +42,8 @@ exports.handleStripeWebhook = async (req, res) => {
         products,
         totalAmount: session.amount_total / 100,
         paymentIntentId: session.payment_intent,
-        shippingInfo: {
-          name: metadata.shippingName,
-          phone: metadata.shippingPhone,
-          address: metadata.shippingAddress,
-        },
+        phone: metadata.phone,
+        address: metadata.address,
       });
 
       console.log("✅ Order saved:", order._id, "on", order.createdAt);
