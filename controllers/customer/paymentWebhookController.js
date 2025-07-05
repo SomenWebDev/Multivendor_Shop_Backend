@@ -1,7 +1,6 @@
-// controllers/customer/paymentWebhookController.js
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const Order = require("../../models/Order");
-const Product = require("../../models/Product"); // ⬅️ import Product model
+const Product = require("../../models/Product");
 
 exports.handleStripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
@@ -25,7 +24,6 @@ exports.handleStripeWebhook = async (req, res) => {
     try {
       const parsedItems = JSON.parse(metadata.cartItems || "[]");
 
-      // Map products from metadata
       const products = parsedItems.map((item) => {
         if (!item.vendorId) {
           throw new Error("Missing vendorId in cart item");
@@ -39,18 +37,20 @@ exports.handleStripeWebhook = async (req, res) => {
         };
       });
 
-      // Create the order
       const order = await Order.create({
         customer: metadata.customerId,
         products,
         totalAmount: session.amount_total / 100,
-        status: "paid",
         paymentIntentId: session.payment_intent,
+        shippingInfo: {
+          name: metadata.shippingName,
+          phone: metadata.shippingPhone,
+          address: metadata.shippingAddress,
+        },
       });
 
       console.log("✅ Order saved:", order._id, "on", order.createdAt);
 
-      // ⬇️ Reduce stock for each product
       for (const item of parsedItems) {
         const product = await Product.findById(item.productId);
         if (product) {

@@ -1,4 +1,3 @@
-// models/order.js
 const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema(
@@ -27,6 +26,11 @@ const orderSchema = new mongoose.Schema(
     ],
     totalAmount: Number,
     paymentIntentId: String,
+    shippingInfo: {
+      name: { type: String, required: true },
+      phone: { type: String, required: true },
+      address: { type: String, required: true },
+    },
   },
   { timestamps: true }
 );
