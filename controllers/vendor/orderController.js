@@ -9,7 +9,9 @@ exports.getVendorOrders = async (req, res) => {
     const search = req.query.search || "";
     const sortBy = req.query.sortBy || "newest";
 
+    // Explicitly select required fields
     const allOrders = await Order.find({ "products.vendor": vendorId })
+      .select("customer products totalAmount phone address createdAt")
       .populate("customer", "name email")
       .populate("products.product", "name price");
 
@@ -69,6 +71,7 @@ exports.getVendorOrders = async (req, res) => {
         (acc, item) => acc + item.price * item.quantity,
         0
       );
+
       return {
         _id: order._id,
         customer: order.customer,
