@@ -1,6 +1,7 @@
 // controllers/vendor/orderController.js
 const Order = require("../../models/Order");
 
+// controllers/vendor/orderController.js
 exports.getVendorOrders = async (req, res) => {
   try {
     const vendorId = req.user.userId;
@@ -9,9 +10,7 @@ exports.getVendorOrders = async (req, res) => {
     const search = req.query.search || "";
     const sortBy = req.query.sortBy || "newest";
 
-    const allOrders = await Order.find({
-      "products.vendor": vendorId,
-    })
+    const allOrders = await Order.find({ "products.vendor": vendorId })
       .populate("customer", "name email")
       .populate("products.product", "name price");
 
@@ -22,7 +21,10 @@ exports.getVendorOrders = async (req, res) => {
       const emailMatch = order.customer?.email
         ?.toLowerCase()
         .includes(search.toLowerCase());
-      return nameMatch || emailMatch;
+      const phoneMatch = order.phone
+        ?.toLowerCase()
+        .includes(search.toLowerCase());
+      return nameMatch || emailMatch || phoneMatch;
     });
 
     // Sorting logic
@@ -75,6 +77,8 @@ exports.getVendorOrders = async (req, res) => {
         customer: order.customer,
         products: vendorProducts,
         totalAmount: vendorTotal,
+        phone: order.phone,
+        address: order.address,
         createdAt: order.createdAt,
       };
     });
