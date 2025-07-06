@@ -6,84 +6,85 @@ exports.getVendorOrders = async (req, res) => {
     const vendorId = req.user.userId;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
-    const search = req.query.search || "";
+    const skip = (page - 1) * limit;
+    const search = req.query.search?.trim().toLowerCase() || "";
     const sortBy = req.query.sortBy || "newest";
 
-    // Explicitly select required fields
-    const allOrders = await Order.find({ "products.vendor": vendorId })
-      .select("customer products totalAmount phone address createdAt")
-      .populate("customer", "name email")
-      .populate("products.product", "name price");
+    // Build dynamic sort
+    let sortStage = {};
+    if (sortBy === "newest") sortStage = { createdAt: -1 };
+    else if (sortBy === "oldest") sortStage = { createdAt: 1 };
 
-    const filteredOrders = allOrders.filter((order) => {
-      const nameMatch = order.customer?.name
-        ?.toLowerCase()
-        .includes(search.toLowerCase());
-      const emailMatch = order.customer?.email
-        ?.toLowerCase()
-        .includes(search.toLowerCase());
-      const phoneMatch = order.phone
-        ?.toLowerCase()
-        .includes(search.toLowerCase());
-      return nameMatch || emailMatch || phoneMatch;
-    });
+    // Build aggregation pipeline
+    const pipeline = [
+      {
+        $match: {
+          "products.vendor": vendorId,
+        },
+      },
+      {
+        $addFields: {
+          vendorProducts: {
+            $filter: {
+              input: "$products",
+              as: "p",
+              cond: { $eq: ["$$p.vendor", vendorId] },
+            },
+          },
+        },
+      },
+      {
+        $addFields: {
+          vendorTotal: {
+            $sum: {
+              $map: {
+                input: "$vendorProducts",
+                as: "item",
+                in: { $multiply: ["$$item.price", "$$item.quantity"] },
+              },
+            },
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "customer",
+          foreignField: "_id",
+          as: "customer",
+        },
+      },
+      {
+        $unwind: "$customer",
+      },
+      {
+        $match: {
+          ...(search && {
+            $or: [
+              { "customer.name": { $regex: search, $options: "i" } },
+              { "customer.email": { $regex: search, $options: "i" } },
+              { phone: { $regex: search, $options: "i" } },
+            ],
+          }),
+        },
+      },
+      {
+        $sort: sortStage,
+      },
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $skip: skip }, { $limit: limit }],
+        },
+      },
+    ];
 
-    let sortedOrders = [...filteredOrders];
+    const result = await Order.aggregate(pipeline);
+    const orders = result[0]?.data || [];
+    const total = result[0]?.metadata[0]?.total || 0;
+    const totalPages = Math.ceil(total / limit);
 
-    if (sortBy === "newest") {
-      sortedOrders.sort((a, b) => b.createdAt - a.createdAt);
-    } else if (sortBy === "oldest") {
-      sortedOrders.sort((a, b) => a.createdAt - b.createdAt);
-    } else if (sortBy === "totalHigh") {
-      sortedOrders.sort((a, b) => {
-        const totalA = a.products
-          .filter((p) => p.vendor.toString() === vendorId)
-          .reduce((acc, item) => acc + item.price * item.quantity, 0);
-        const totalB = b.products
-          .filter((p) => p.vendor.toString() === vendorId)
-          .reduce((acc, item) => acc + item.price * item.quantity, 0);
-        return totalB - totalA;
-      });
-    } else if (sortBy === "totalLow") {
-      sortedOrders.sort((a, b) => {
-        const totalA = a.products
-          .filter((p) => p.vendor.toString() === vendorId)
-          .reduce((acc, item) => acc + item.price * item.quantity, 0);
-        const totalB = b.products
-          .filter((p) => p.vendor.toString() === vendorId)
-          .reduce((acc, item) => acc + item.price * item.quantity, 0);
-        return totalA - totalB;
-      });
-    }
-
-    const totalCount = sortedOrders.length;
-    const totalPages = Math.ceil(totalCount / limit);
-    const paginatedOrders = sortedOrders.slice(
-      (page - 1) * limit,
-      page * limit
-    );
-
-    const result = paginatedOrders.map((order) => {
-      const vendorProducts = order.products.filter(
-        (p) => p.vendor.toString() === vendorId
-      );
-      const vendorTotal = vendorProducts.reduce(
-        (acc, item) => acc + item.price * item.quantity,
-        0
-      );
-
-      return {
-        _id: order._id,
-        customer: order.customer,
-        products: vendorProducts,
-        totalAmount: vendorTotal,
-        phone: order.phone,
-        address: order.address,
-        createdAt: order.createdAt,
-      };
-    });
-
-    res.json({ orders: result, totalPages });
+    res.json({ orders, totalPages });
   } catch (err) {
     console.error("Vendor Orders Error:", err);
     res.status(500).json({ message: "Failed to fetch orders" });

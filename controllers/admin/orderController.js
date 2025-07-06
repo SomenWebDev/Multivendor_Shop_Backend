@@ -1,6 +1,4 @@
 const Order = require("../../models/Order");
-const Product = require("../../models/Product");
-const Category = require("../../models/Category");
 
 exports.getAllOrders = async (req, res) => {
   try {
@@ -8,54 +6,78 @@ exports.getAllOrders = async (req, res) => {
     const limit = 10;
     const skip = (parseInt(page) - 1) * limit;
 
-    let query = {};
+    // Build base query
+    const matchStage = {};
 
+    // Search by customer name/email and phone
     if (search) {
-      query = {
-        ...query,
-        $or: [
-          { "customer.name": { $regex: search, $options: "i" } },
-          { "customer.email": { $regex: search, $options: "i" } },
-        ],
-      };
+      matchStage.$or = [{ phone: { $regex: search, $options: "i" } }];
     }
 
-    const orders = await Order.find()
-      .populate("customer", "name email")
-      .populate("products.product", "name category")
-      .populate("products.vendor", "name email")
-      .sort({ createdAt: -1 });
+    // Use aggregation to join and filter properly
+    const pipeline = [
+      {
+        $lookup: {
+          from: "users",
+          localField: "customer",
+          foreignField: "_id",
+          as: "customer",
+        },
+      },
+      { $unwind: "$customer" },
+    ];
 
-    let filteredOrders = orders;
+    // Add customer name/email search
+    if (search) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { "customer.name": { $regex: search, $options: "i" } },
+            { "customer.email": { $regex: search, $options: "i" } },
+            { phone: { $regex: search, $options: "i" } },
+          ],
+        },
+      });
+    }
 
-    // Apply status and category filtering
+    // Add status filtering
     if (status) {
-      filteredOrders = filteredOrders.filter((order) =>
-        order.products.some((p) => p.status === status)
-      );
+      pipeline.push({
+        $match: {
+          "products.status": status,
+        },
+      });
     }
 
+    // Add category filtering
     if (category) {
-      filteredOrders = filteredOrders.filter((order) =>
-        order.products.some((p) => p.product.category?.toString() === category)
-      );
+      pipeline.push({
+        $match: {
+          "products.product.category": category,
+        },
+      });
     }
 
-    // Apply search manually
-    if (search) {
-      filteredOrders = filteredOrders.filter(
-        (order) =>
-          order.customer?.name?.toLowerCase().includes(search.toLowerCase()) ||
-          order.customer?.email?.toLowerCase().includes(search.toLowerCase())
-      );
-    }
+    pipeline.push(
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit }
+    );
 
-    const paginated = filteredOrders.slice(skip, skip + limit);
+    const orders = await Order.aggregate(pipeline);
+
+    // Total count (for pagination)
+    const totalCountPipeline = pipeline.filter(
+      (stage) => !stage.$skip && !stage.$limit
+    );
+    totalCountPipeline.push({ $count: "total" });
+    const countResult = await Order.aggregate(totalCountPipeline);
+    const total = countResult[0]?.total || 0;
 
     res.json({
-      orders: paginated,
+      orders,
       currentPage: parseInt(page),
-      totalPages: Math.ceil(filteredOrders.length / limit),
+      totalPages: Math.ceil(total / limit),
     });
   } catch (err) {
     console.error("Error fetching admin orders:", err);
