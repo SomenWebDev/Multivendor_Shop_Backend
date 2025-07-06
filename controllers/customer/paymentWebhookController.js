@@ -1,3 +1,4 @@
+//controllers//customer//paymentwebhookcontroller.js
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const Order = require("../../models/Order");
 const Product = require("../../models/Product");
@@ -27,7 +28,7 @@ exports.handleStripeWebhook = async (req, res) => {
     try {
       const tempOrder = await TempOrder.findOne({ sessionId: session.id });
 
-      console.log("Fetched TempOrder:", tempOrder);
+      console.log("Fetched TempOrder from DB:", tempOrder);
 
       if (!tempOrder) {
         throw new Error("No matching temp order found for this session");
@@ -49,7 +50,7 @@ exports.handleStripeWebhook = async (req, res) => {
         address: tempOrder.address,
       };
 
-      console.log("Creating Order with data:", orderData);
+      console.log("Order data to be saved:", orderData);
 
       const order = await Order.create(orderData);
 
@@ -63,7 +64,6 @@ exports.handleStripeWebhook = async (req, res) => {
         }
       }
 
-      // Clean up temp data
       await TempOrder.deleteOne({ _id: tempOrder._id });
       console.log("TempOrder deleted after successful order creation");
     } catch (error) {
