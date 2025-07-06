@@ -1,7 +1,6 @@
 // controllers/vendor/orderController.js
 const Order = require("../../models/Order");
 
-// controllers/vendor/orderController.js
 exports.getVendorOrders = async (req, res) => {
   try {
     const vendorId = req.user.userId;
@@ -27,15 +26,14 @@ exports.getVendorOrders = async (req, res) => {
       return nameMatch || emailMatch || phoneMatch;
     });
 
-    // Sorting logic
-    let sortedOrders = filteredOrders;
+    let sortedOrders = [...filteredOrders];
 
     if (sortBy === "newest") {
-      sortedOrders = filteredOrders.sort((a, b) => b.createdAt - a.createdAt);
+      sortedOrders.sort((a, b) => b.createdAt - a.createdAt);
     } else if (sortBy === "oldest") {
-      sortedOrders = filteredOrders.sort((a, b) => a.createdAt - b.createdAt);
+      sortedOrders.sort((a, b) => a.createdAt - b.createdAt);
     } else if (sortBy === "totalHigh") {
-      sortedOrders = filteredOrders.sort((a, b) => {
+      sortedOrders.sort((a, b) => {
         const totalA = a.products
           .filter((p) => p.vendor.toString() === vendorId)
           .reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -45,7 +43,7 @@ exports.getVendorOrders = async (req, res) => {
         return totalB - totalA;
       });
     } else if (sortBy === "totalLow") {
-      sortedOrders = filteredOrders.sort((a, b) => {
+      sortedOrders.sort((a, b) => {
         const totalA = a.products
           .filter((p) => p.vendor.toString() === vendorId)
           .reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -58,7 +56,6 @@ exports.getVendorOrders = async (req, res) => {
 
     const totalCount = sortedOrders.length;
     const totalPages = Math.ceil(totalCount / limit);
-
     const paginatedOrders = sortedOrders.slice(
       (page - 1) * limit,
       page * limit
